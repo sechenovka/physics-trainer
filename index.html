@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Физика — тренажёр к забору</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>⚛ Физика · тренажёр</h1>
+  <p class="sub">1 курс, 2 семестр · теория + задачи в 1–2 действия</p>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-mode="exam">Забор (10+10)</button>
+  <button class="tab" data-mode="theory">Теория</button>
+  <button class="tab" data-mode="practice">Задачи</button>
+</nav>
+
+<div class="controls" id="controls">
+  <select id="topicFilter"><option value="">Все темы</option></select>
+  <button id="shuffleBtn" class="ghost">Перемешать</button>
+  <button id="resetBtn" class="ghost">Сброс прогресса</button>
+  <span id="counter"></span>
+</div>
+
+<main id="app"></main>
+
+<template id="cardTpl">
+  <div class="card">
+    <div class="card-head">
+      <span class="chip topic"></span>
+      <span class="chip kind"></span>
+    </div>
+    <div class="q"></div>
+    <div class="options"></div>
+    <div class="answer-row">
+      <input class="ans-input" type="text" placeholder="Ответ (число)">
+      <button class="check-btn">Проверить</button>
+      <span class="verdict"></span>
+    </div>
+    <div class="btns">
+      <button class="hint-btn ghost">💡 Подсказка</button>
+      <button class="sol-btn ghost">📖 Решение</button>
+      <button class="next-btn">Следующий →</button>
+    </div>
+    <div class="hint hidden"></div>
+    <div class="solution hidden"></div>
+  </div>
+</template>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
