@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Физика — тренажёр к забору</title>
+<title>Физика — тренажёр к добору</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,8 +13,9 @@
 </header>
 
 <nav class="tabs">
-  <button class="tab active" data-mode="exam">Забор (10+10)</button>
-  <button class="tab" data-mode="theory">Теория</button>
+  <button class="tab active" data-mode="exam">Добор (10+10)</button>
+  <button class="tab" data-mode="defs">Определения</button>
+  <button class="tab" data-mode="forms">Формулы</button>
   <button class="tab" data-mode="practice">Задачи</button>
 </nav>
 
@@ -26,9 +27,12 @@
   </select>
   <select id="topicFilter"><option value="">Все темы</option></select>
   <button id="shuffleBtn" class="ghost">Перемешать</button>
+  <button id="cheatsheetBtn" class="ghost">📚 Шпаргалка</button>
   <button id="resetBtn" class="ghost">Сброс прогресса</button>
   <span id="counter"></span>
 </div>
+
+<div id="cheatsheet" class="hidden"></div>
 
 <main id="app"></main>
 
@@ -47,16 +51,19 @@
     </div>
     <div class="btns">
       <button class="hint-btn ghost">💡 Подсказка</button>
+      <button class="info-btn ghost">📚 Справка</button>
       <button class="sol-btn ghost">📖 Решение</button>
       <button class="next-btn">Следующий →</button>
     </div>
     <div class="hint hidden"></div>
+    <div class="info hidden"></div>
     <div class="solution hidden"></div>
   </div>
 </template>
 
 <script src="data.js"></script>
 <script src="data2.js"></script>
+<script src="data3.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

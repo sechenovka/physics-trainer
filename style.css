@@ -39,6 +39,18 @@ main{max-width:760px;margin:10px auto;padding:0 12px}
 .hint{background:#1a2338;border-left:3px solid #eab308;color:#e8d9a8}
 .solution{background:#14231c;border-left:3px solid #22c55e;color:#b9e8c9}
 .solution b{color:#fff}
+.info{margin-top:14px;padding:14px 16px;border-radius:10px;font-size:15px;line-height:1.55;background:#1b2036;border-left:3px solid #818cf8;color:#c9cee8}
+.info-about{margin-bottom:10px}
+.info-forms ul{list-style:none;margin-top:6px}
+.info-forms li{padding:5px 0;border-bottom:1px dashed #2a3550}
+.info-forms li:last-child{border-bottom:none}
+.info-forms code{background:#0f1420;padding:2px 7px;border-radius:6px;color:#a5d8ff;font-size:13.5px}
+#cheatsheet{max-width:760px;margin:10px auto;padding:0 12px}
+.cs-topic{background:#161d2e;border:1px solid #26314c;border-radius:12px;padding:12px 16px;margin-bottom:8px}
+.cs-topic summary{cursor:pointer;font-weight:700;font-size:15px;color:#9ec1ff}
+.cs-topic .info-about{margin-top:10px;font-size:14.5px;line-height:1.55;color:#c9cee8}
+.cs-topic .info-forms{font-size:14px;line-height:1.55;color:#c9cee8;margin-top:8px}
+.cs-topic .info-forms code{background:#0f1420;padding:2px 7px;border-radius:6px;color:#a5d8ff;font-size:13px}
 .hidden{display:none}
 .summary{text-align:center;padding:30px 10px}
 .summary .big{font-size:46px;font-weight:800;margin:14px 0}

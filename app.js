@@ -4,9 +4,9 @@ const app = $('#app');
 const cardTpl = $('#cardTpl');
 
 let mode = 'exam';
-let deck = [];        // текущая колода [{type:'t'|'p', item}]
+let deck = [];        // текущая колода [{type:'t'|'p', item, level, kind, id}]
 let idx = 0;
-let examStats = null; // {done:0, correct:0} в режиме забора
+let examStats = null; // {done:0, correct:0} в режиме добора
 
 const LS_KEY = 'physTrainerDone';
 const done = new Set(JSON.parse(localStorage.getItem(LS_KEY) || '[]'));
@@ -20,12 +20,17 @@ const ALL_THEORY = [...THEORY.map(x => ({ ...x, level: 1 })), ...THEORY_HARD.map
 const ALL_PRACTICE = [...PRACTICE.map(x => ({ ...x, level: 1 })), ...PRACTICE_HARD.map(x => ({ ...x, level: 2 }))];
 const currentLevel = () => $('#levelFilter').value ? +$('#levelFilter').value : null;
 
-function buildTheoryDeck(topic, level) {
-  return ALL_THEORY.map((item, i) => ({ type: 't', item, level: item.level, id: qid('t', i) + '_' + item.level }))
-    .filter(d => (!topic || d.item.topic === topic) && (!level || d.level === level));
+// Вопросы-формулы (глобальные индексы в ALL_THEORY): варианты — формулы/числа, а не словесные утверждения
+const FORMULA_LIGHT = new Set([12,17,22,26,28,31,33,36,40,41,46,51,52,53,54,55,56,57,61,64,65,66,70,71,74,80,81,82,86,98,99,101,103,104,105,106,108,109,110,111,113,115,117,121,123,124,126,128,130,134]);
+const FORMULA_HARD = new Set([17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,58,59,60,61,62,63,66,70,86,99,103,107]);
+const FORMULA_SET = new Set([...FORMULA_LIGHT, ...[...FORMULA_HARD].map(i => i + THEORY.length)]);
+
+function buildTheoryDeck(topic, level, kind) {
+  return ALL_THEORY.map((item, i) => ({ type: 't', item, level: item.level, kind: FORMULA_SET.has(i) ? 'form' : 'def', id: qid('t', i) + '_' + item.level }))
+    .filter(d => (!topic || d.item.topic === topic) && (!level || d.level === level) && (!kind || d.kind === kind));
 }
 function buildPracticeDeck(topic, level) {
-  return ALL_PRACTICE.map((item, i) => ({ type: 'p', item, level: item.level, id: qid('p', i) + '_' + item.level }))
+  return ALL_PRACTICE.map((item, i) => ({ type: 'p', item, level: item.level, kind: 'p', id: qid('p', i) + '_' + item.level }))
     .filter(d => (!topic || d.item.topic === topic) && (!level || d.level === level));
 }
 function buildExamDeck() {
@@ -47,6 +52,8 @@ function fillTopicFilter() {
   });
 }
 
+const KIND_LABEL = { def: 'Определение', form: 'Формула', p: 'Задача' };
+
 function updateCounter() {
   const c = $('#counter');
   if (mode === 'exam') {
@@ -58,16 +65,27 @@ function updateCounter() {
   }
 }
 
+function renderInfoBox(d) {
+  const info = TOPIC_INFO[d.item.topic];
+  if (!info) return '<i>Справки по теме пока нет.</i>';
+  return `<div class="info-about">${info.about.replace(/\n/g, '<br>')}</div>
+    <div class="info-forms"><b>Ключевые формулы:</b><ul>` +
+    info.formulas.map(([f, d2]) => `<li><code>${f}</code> — ${d2}</li>`).join('') +
+    '</ul></div>';
+}
+
 function renderCard(d) {
   const node = cardTpl.content.cloneNode(true);
   const card = node.querySelector('.card');
   card.querySelector('.topic').textContent = d.item.topic;
-  card.querySelector('.kind').textContent = (d.type === 't' ? 'Теория' : 'Задача') + (d.level === 2 ? ' · сложный' : ' · лёгкий');
+  card.querySelector('.kind').textContent = KIND_LABEL[d.kind] + (d.level === 2 ? ' · сложный' : ' · лёгкий');
   card.querySelector('.q').innerHTML = d.item.q;
 
   const hintBox = card.querySelector('.hint');
   const solBox = card.querySelector('.solution');
+  const infoBox = card.querySelector('.info');
   hintBox.textContent = '💡 ' + d.item.hint;
+  infoBox.innerHTML = renderInfoBox(d);
 
   if (d.type === 't') {
     card.querySelector('.answer-row').classList.add('hidden');
@@ -116,6 +134,7 @@ function renderCard(d) {
   }
 
   card.querySelector('.hint-btn').onclick = () => hintBox.classList.toggle('hidden');
+  card.querySelector('.info-btn').onclick = () => infoBox.classList.toggle('hidden');
   card.querySelector('.sol-btn').onclick = () => solBox.classList.toggle('hidden');
   card.querySelector('.next-btn').onclick = next;
 
@@ -134,13 +153,13 @@ function renderSummary() {
   if (mode === 'exam' && examStats) {
     const total = deck.length;
     const pct = Math.round(examStats.correct / total * 100);
-    const grade = pct >= 90 ? 'Отлично, забор сдан!' : pct >= 70 ? 'Неплохо, но есть пробелы' : pct >= 50 ? 'Средне — повтори слабые темы' : 'К забору не готов — жми ещё раз';
+    const grade = pct >= 90 ? 'Отлично, добор сдан!' : pct >= 70 ? 'Неплохо, но есть пробелы' : pct >= 50 ? 'Средне — повтори слабые темы' : 'К добору не готов — жми ещё раз';
     app.innerHTML = `<div class="card summary">
-      <div>Забор завершён</div>
+      <div>Добор завершён</div>
       <div class="big">${examStats.correct} / ${total}</div>
       <div class="bar"><i style="width:${pct}%"></i></div>
       <div class="grade">${grade}</div>
-      <button class="next-btn" style="margin:0" onclick="restart()">Новый забор</button>
+      <button class="next-btn" style="margin:0" onclick="restart()">Новый добор</button>
     </div>`;
   } else {
     app.innerHTML = `<div class="card summary">
@@ -156,7 +175,8 @@ function build() {
   else {
     const topic = $('#topicFilter').value;
     const level = currentLevel();
-    deck = shuffle(mode === 'theory' ? buildTheoryDeck(topic, level) : buildPracticeDeck(topic, level));
+    const kind = mode === 'defs' ? 'def' : mode === 'forms' ? 'form' : null;
+    deck = shuffle(mode === 'practice' ? buildPracticeDeck(topic, level) : buildTheoryDeck(topic, level, kind));
     examStats = null;
   }
   idx = 0;
@@ -165,6 +185,18 @@ function build() {
 
 function restart() { build(); }
 window.restart = restart;
+
+// ---------- шпаргалка ----------
+function buildCheatsheet() {
+  const el = $('#cheatsheet');
+  el.innerHTML = Object.entries(TOPIC_INFO).map(([topic, info]) => `
+    <details class="cs-topic"><summary>${topic}</summary>
+      <div class="info-about">${info.about.replace(/\n/g, '<br>')}</div>
+      <div class="info-forms"><b>Ключевые формулы:</b><ul>` +
+      info.formulas.map(([f, d2]) => `<li><code>${f}</code> — ${d2}</li>`).join('') +
+      `</ul></div>
+    </details>`).join('');
+}
 
 // ---------- события ----------
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
@@ -179,6 +211,8 @@ $('#topicFilter').onchange = build;
 $('#levelFilter').onchange = build;
 $('#shuffleBtn').onclick = build;
 $('#resetBtn').onclick = () => { if (confirm('Сбросить отметки о решённых вопросах?')) { done.clear(); saveDone(); updateCounter(); } };
+$('#cheatsheetBtn').onclick = () => $('#cheatsheet').classList.toggle('hidden');
 
 fillTopicFilter();
+buildCheatsheet();
 build();
