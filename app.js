@@ -9,49 +9,120 @@ let idx = 0;
 let examStats = null; // {done:0, correct:0} в режиме добора
 
 const LS_KEY = 'physTrainerDone';
-const done = new Set(JSON.parse(localStorage.getItem(LS_KEY) || '[]'));
+const TOPICS_KEY = 'physTrainerTopics';
+
+// ---------- уровни и банки ----------
+const LEVEL_NAMES = { 1: 'лёгкий', 2: 'средний', 3: 'сложный', 4: 'экзамен' };
+
+// Вопросы-формулы лёгкого и сложного банков (индексы внутри своих массивов).
+// У новых банков (L2/MED/H2/EXAM) разметка стоит прямо в данных — поле f:true.
+const FORMULA_LIGHT = new Set([12,17,22,26,28,31,33,36,40,41,46,51,52,53,54,55,56,57,61,64,65,66,70,71,74,80,81,82,86,98,99,101,103,104,105,106,108,109,110,111,113,115,117,121,123,124,126,128,130,134]);
+const FORMULA_HARD = new Set([17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,58,59,60,61,62,63,66,70,86,99,103,107]);
+
+const tag = (arr, level, formSet) => arr.map((x, i) => ({
+  ...x, level, kind: (x.f || (formSet && formSet.has(i))) ? 'form' : 'def'
+}));
+
+const ALL_THEORY = [
+  ...tag(THEORY, 1, FORMULA_LIGHT),
+  ...tag(THEORY_L2, 1),
+  ...tag(THEORY_MED, 2),
+  ...tag(THEORY_HARD, 3, FORMULA_HARD),
+  ...tag(THEORY_H2, 3),
+  ...tag(THEORY_EXAM, 4)
+];
+const ALL_PRACTICE = [
+  ...PRACTICE.map(x => ({ ...x, level: 1 })),
+  ...PRACTICE_L2.map(x => ({ ...x, level: 1 })),
+  ...PRACTICE_MED.map(x => ({ ...x, level: 2 })),
+  ...PRACTICE_HARD.map(x => ({ ...x, level: 3 })),
+  ...PRACTICE_H2.map(x => ({ ...x, level: 3 })),
+  ...PRACTICE_EXAM.map(x => ({ ...x, level: 4 }))
+];
+
+// Смещение СЛОЖНОГО банка в общем массиве — нужно для миграции старых id прогресса
+const OFF_T3 = THEORY.length + THEORY_L2.length + THEORY_MED.length;
+const OFF_P3 = PRACTICE.length + PRACTICE_L2.length + PRACTICE_MED.length;
+
+// ---------- прогресс ----------
+function migrateDone(raw) {
+  return raw.map(id => {
+    const m = id.match(/^([tp])(\d+)_(\d)$/);
+    if (!m) return id;
+    const [, t, ns, lvl] = m; const n = +ns;
+    if (lvl === '1') return `${t}${n}`;                       // лёгкий банк не сдвинулся
+    if (lvl === '2') return `${t}${n + (t === 't' ? OFF_T3 : OFF_P3)}`; // старый «сложный» → level 3
+    return id;
+  });
+}
+const done = new Set(migrateDone(JSON.parse(localStorage.getItem(LS_KEY) || '[]')));
 const saveDone = () => localStorage.setItem(LS_KEY, JSON.stringify([...done]));
 
 const qid = (type, i) => `${type}${i}`;
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
-// ---------- сбор колод ----------
-const ALL_THEORY = [...THEORY.map(x => ({ ...x, level: 1 })), ...THEORY_HARD.map(x => ({ ...x, level: 2 }))];
-const ALL_PRACTICE = [...PRACTICE.map(x => ({ ...x, level: 1 })), ...PRACTICE_HARD.map(x => ({ ...x, level: 2 }))];
-const currentLevel = () => $('#levelFilter').value ? +$('#levelFilter').value : null;
+// ---------- фильтры ----------
+const selLevels = () => [...document.querySelectorAll('.lvl-cb:checked')].map(c => +c.value);
+const selTopics = () => new Set([...document.querySelectorAll('.topic-cb:checked')].map(c => c.value));
 
-// Вопросы-формулы (глобальные индексы в ALL_THEORY): варианты — формулы/числа, а не словесные утверждения
-const FORMULA_LIGHT = new Set([12,17,22,26,28,31,33,36,40,41,46,51,52,53,54,55,56,57,61,64,65,66,70,71,74,80,81,82,86,98,99,101,103,104,105,106,108,109,110,111,113,115,117,121,123,124,126,128,130,134]);
-const FORMULA_HARD = new Set([17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,58,59,60,61,62,63,66,70,86,99,103,107]);
-const FORMULA_SET = new Set([...FORMULA_LIGHT, ...[...FORMULA_HARD].map(i => i + THEORY.length)]);
+function passFilters(d, levels, topics) {
+  return levels.includes(d.level) && (!topics.size || topics.has(d.item.topic));
+}
 
-function buildTheoryDeck(topic, level, kind) {
-  return ALL_THEORY.map((item, i) => ({ type: 't', item, level: item.level, kind: FORMULA_SET.has(i) ? 'form' : 'def', id: qid('t', i) + '_' + item.level }))
-    .filter(d => (!topic || d.item.topic === topic) && (!level || d.level === level) && (!kind || d.kind === kind));
+function buildTheoryDeck(kind, levels, topics) {
+  return ALL_THEORY.map((item, i) => ({ type: 't', item, level: item.level, kind: item.kind, id: qid('t', i) }))
+    .filter(d => (!kind || d.kind === kind) && passFilters(d, levels, topics));
 }
-function buildPracticeDeck(topic, level) {
-  return ALL_PRACTICE.map((item, i) => ({ type: 'p', item, level: item.level, kind: 'p', id: qid('p', i) + '_' + item.level }))
-    .filter(d => (!topic || d.item.topic === topic) && (!level || d.level === level));
+function buildPracticeDeck(levels, topics) {
+  return ALL_PRACTICE.map((item, i) => ({ type: 'p', item, level: item.level, kind: 'p', id: qid('p', i) }))
+    .filter(d => passFilters(d, levels, topics));
 }
-function buildExamDeck() {
-  const level = currentLevel();
-  const t = shuffle([...buildTheoryDeck('', level)]).slice(0, 10);
-  const p = shuffle([...buildPracticeDeck('', level)]).slice(0, 10);
+function buildExamDeck(levels, topics) {
+  const t = shuffle([...buildTheoryDeck(null, levels, topics)]).slice(0, 10);
+  const p = shuffle([...buildPracticeDeck(levels, topics)]).slice(0, 10);
   return shuffle([...t, ...p]);
 }
 
-// ---------- рендер ----------
+// ---------- рендер фильтра тем ----------
 function topicsOf(list) { return [...new Set(list.map(x => x.topic))]; }
 
-function fillTopicFilter() {
-  const sel = $('#topicFilter');
-  sel.innerHTML = '<option value="">Все темы</option>';
-  const src = mode === 'practice' ? ALL_PRACTICE : ALL_THEORY;
-  topicsOf(src).forEach(t => {
-    const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o);
-  });
+function currentTopics() {
+  if (mode === 'practice') return topicsOf(ALL_PRACTICE);
+  if (mode === 'all') return topicsOf(ALL_PRACTICE.concat(ALL_THEORY));
+  return topicsOf(ALL_THEORY);
 }
 
+let savedTopics = {};
+try { savedTopics = JSON.parse(localStorage.getItem(TOPICS_KEY) || '{}'); } catch (e) { savedTopics = {}; }
+
+function buildTopicPanel() {
+  const panel = $('#topicPanel');
+  const topics = currentTopics();
+  const off = new Set(savedTopics[mode] || []);
+  panel.innerHTML =
+    `<div class="tp-actions"><button id="tpAll">Все</button><button id="tpNone">Ни одной</button></div>` +
+    topics.map(t => `<label class="tp-row"><input type="checkbox" class="topic-cb" value="${t}" ${off.has(t) ? '' : 'checked'}> ${t}</label>`).join('');
+  panel.querySelector('#tpAll').onclick = e => { e.preventDefault(); panel.querySelectorAll('.topic-cb').forEach(c => c.checked = true); onTopicChange(); };
+  panel.querySelector('#tpNone').onclick = e => { e.preventDefault(); panel.querySelectorAll('.topic-cb').forEach(c => c.checked = false); onTopicChange(); };
+  panel.querySelectorAll('.topic-cb').forEach(c => c.onchange = onTopicChange);
+  updateTopicBtn();
+}
+
+function onTopicChange() {
+  const off = currentTopics().filter(t => !selTopics().has(t));
+  savedTopics[mode] = off;
+  localStorage.setItem(TOPICS_KEY, JSON.stringify(savedTopics));
+  updateTopicBtn();
+  build();
+}
+
+function updateTopicBtn() {
+  const total = currentTopics().length;
+  const on = selTopics().size;
+  $('#topicBtn').textContent = on === total ? 'Темы: все ▾' : `Темы: ${on}/${total} ▾`;
+}
+
+// ---------- рендер карточки ----------
 const KIND_LABEL = { def: 'Определение', form: 'Формула', p: 'Задача' };
 
 function updateCounter() {
@@ -78,7 +149,7 @@ function renderCard(d) {
   const node = cardTpl.content.cloneNode(true);
   const card = node.querySelector('.card');
   card.querySelector('.topic').textContent = d.item.topic;
-  card.querySelector('.kind').textContent = KIND_LABEL[d.kind] + (d.level === 2 ? ' · сложный' : ' · лёгкий');
+  card.querySelector('.kind').textContent = KIND_LABEL[d.kind] + ' · ' + LEVEL_NAMES[d.level];
   card.querySelector('.q').innerHTML = d.item.q;
 
   const hintBox = card.querySelector('.hint');
@@ -171,16 +242,21 @@ function renderSummary() {
 }
 
 function build() {
-  if (mode === 'exam') { deck = buildExamDeck(); examStats = { done: 0, correct: 0, answered: new Set() }; }
+  const levels = selLevels();
+  const topics = selTopics();
+  if (mode === 'exam') { deck = buildExamDeck(levels, topics); examStats = { done: 0, correct: 0, answered: new Set() }; }
   else {
-    const topic = $('#topicFilter').value;
-    const level = currentLevel();
-    const kind = mode === 'defs' ? 'def' : mode === 'forms' ? 'form' : null;
-    deck = shuffle(mode === 'practice' ? buildPracticeDeck(topic, level) : buildTheoryDeck(topic, level, kind));
+    let kind = null;
+    if (mode === 'defs') kind = 'def';
+    else if (mode === 'forms') kind = 'form';
+    if (mode === 'practice') deck = shuffle(buildPracticeDeck(levels, topics));
+    else if (mode === 'all') deck = shuffle([...buildTheoryDeck(null, levels, topics), ...buildPracticeDeck(levels, topics)]);
+    else deck = shuffle(buildTheoryDeck(kind, levels, topics));
     examStats = null;
   }
   idx = 0;
-  deck.length ? renderCard(deck[0]) : (app.innerHTML = '<div class="card">Нет вопросов</div>');
+  deck.length ? renderCard(deck[0]) : (app.innerHTML = '<div class="card">Нет вопросов по выбранным фильтрам</div>');
+  updateCounter();
 }
 
 function restart() { build(); }
@@ -203,16 +279,16 @@ document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
   document.querySelector('.tab.active').classList.remove('active');
   b.classList.add('active');
   mode = b.dataset.mode;
-  $('#topicFilter').style.display = mode === 'exam' ? 'none' : '';
-  fillTopicFilter();
+  buildTopicPanel();
   build();
 });
-$('#topicFilter').onchange = build;
-$('#levelFilter').onchange = build;
+document.querySelectorAll('.lvl-cb').forEach(c => c.onchange = build);
+$('#topicBtn').onclick = e => { e.stopPropagation(); $('#topicPanel').classList.toggle('hidden'); };
+document.addEventListener('click', e => { if (!e.target.closest('#topicWrap')) $('#topicPanel').classList.add('hidden'); });
 $('#shuffleBtn').onclick = build;
 $('#resetBtn').onclick = () => { if (confirm('Сбросить отметки о решённых вопросах?')) { done.clear(); saveDone(); updateCounter(); } };
 $('#cheatsheetBtn').onclick = () => $('#cheatsheet').classList.toggle('hidden');
 
-fillTopicFilter();
+buildTopicPanel();
 buildCheatsheet();
 build();

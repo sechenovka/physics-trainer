@@ -17,15 +17,20 @@
   <button class="tab" data-mode="defs">Определения</button>
   <button class="tab" data-mode="forms">Формулы</button>
   <button class="tab" data-mode="practice">Задачи</button>
+  <button class="tab" data-mode="all">Всё вместе</button>
 </nav>
 
 <div class="controls" id="controls">
-  <select id="levelFilter">
-    <option value="">Все уровни</option>
-    <option value="1">Лёгкий</option>
-    <option value="2">Сложный</option>
-  </select>
-  <select id="topicFilter"><option value="">Все темы</option></select>
+  <div class="levels">
+    <label><input type="checkbox" class="lvl-cb" value="1" checked> Лёгкий</label>
+    <label><input type="checkbox" class="lvl-cb" value="2" checked> Средний</label>
+    <label><input type="checkbox" class="lvl-cb" value="3" checked> Сложный</label>
+    <label><input type="checkbox" class="lvl-cb" value="4" checked> Экзамен</label>
+  </div>
+  <div id="topicWrap">
+    <button id="topicBtn" class="ghost">Темы: все ▾</button>
+    <div id="topicPanel" class="hidden"></div>
+  </div>
   <button id="shuffleBtn" class="ghost">Перемешать</button>
   <button id="cheatsheetBtn" class="ghost">📚 Шпаргалка</button>
   <button id="resetBtn" class="ghost">Сброс прогресса</button>
@@ -62,7 +67,10 @@
 </template>
 
 <script src="data.js"></script>
+<script src="data_extra.js"></script>
+<script src="data_med.js"></script>
 <script src="data2.js"></script>
+<script src="data_exam.js"></script>
 <script src="data3.js"></script>
 <script src="app.js"></script>
 </body>
