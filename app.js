@@ -16,17 +16,22 @@ const qid = (type, i) => `${type}${i}`;
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
 // ---------- сбор колод ----------
-function buildTheoryDeck(topic) {
-  return THEORY.map((item, i) => ({ type: 't', item, id: qid('t', i) }))
-    .filter(d => !topic || d.item.topic === topic);
+const ALL_THEORY = [...THEORY.map(x => ({ ...x, level: 1 })), ...THEORY_HARD.map(x => ({ ...x, level: 2 }))];
+const ALL_PRACTICE = [...PRACTICE.map(x => ({ ...x, level: 1 })), ...PRACTICE_HARD.map(x => ({ ...x, level: 2 }))];
+const currentLevel = () => $('#levelFilter').value ? +$('#levelFilter').value : null;
+
+function buildTheoryDeck(topic, level) {
+  return ALL_THEORY.map((item, i) => ({ type: 't', item, level: item.level, id: qid('t', i) + '_' + item.level }))
+    .filter(d => (!topic || d.item.topic === topic) && (!level || d.level === level));
 }
-function buildPracticeDeck(topic) {
-  return PRACTICE.map((item, i) => ({ type: 'p', item, id: qid('p', i) }))
-    .filter(d => !topic || d.item.topic === topic);
+function buildPracticeDeck(topic, level) {
+  return ALL_PRACTICE.map((item, i) => ({ type: 'p', item, level: item.level, id: qid('p', i) + '_' + item.level }))
+    .filter(d => (!topic || d.item.topic === topic) && (!level || d.level === level));
 }
 function buildExamDeck() {
-  const t = shuffle([...buildTheoryDeck('')]).slice(0, 10);
-  const p = shuffle([...buildPracticeDeck('')]).slice(0, 10);
+  const level = currentLevel();
+  const t = shuffle([...buildTheoryDeck('', level)]).slice(0, 10);
+  const p = shuffle([...buildPracticeDeck('', level)]).slice(0, 10);
   return shuffle([...t, ...p]);
 }
 
@@ -36,7 +41,7 @@ function topicsOf(list) { return [...new Set(list.map(x => x.topic))]; }
 function fillTopicFilter() {
   const sel = $('#topicFilter');
   sel.innerHTML = '<option value="">Все темы</option>';
-  const src = mode === 'practice' ? PRACTICE : THEORY;
+  const src = mode === 'practice' ? ALL_PRACTICE : ALL_THEORY;
   topicsOf(src).forEach(t => {
     const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o);
   });
@@ -57,7 +62,7 @@ function renderCard(d) {
   const node = cardTpl.content.cloneNode(true);
   const card = node.querySelector('.card');
   card.querySelector('.topic').textContent = d.item.topic;
-  card.querySelector('.kind').textContent = d.type === 't' ? 'Теория' : 'Задача';
+  card.querySelector('.kind').textContent = (d.type === 't' ? 'Теория' : 'Задача') + (d.level === 2 ? ' · сложный' : ' · лёгкий');
   card.querySelector('.q').innerHTML = d.item.q;
 
   const hintBox = card.querySelector('.hint');
@@ -150,7 +155,8 @@ function build() {
   if (mode === 'exam') { deck = buildExamDeck(); examStats = { done: 0, correct: 0, answered: new Set() }; }
   else {
     const topic = $('#topicFilter').value;
-    deck = shuffle(mode === 'theory' ? buildTheoryDeck(topic) : buildPracticeDeck(topic));
+    const level = currentLevel();
+    deck = shuffle(mode === 'theory' ? buildTheoryDeck(topic, level) : buildPracticeDeck(topic, level));
     examStats = null;
   }
   idx = 0;
@@ -170,6 +176,7 @@ document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
   build();
 });
 $('#topicFilter').onchange = build;
+$('#levelFilter').onchange = build;
 $('#shuffleBtn').onclick = build;
 $('#resetBtn').onclick = () => { if (confirm('Сбросить отметки о решённых вопросах?')) { done.clear(); saveDone(); updateCounter(); } };
 
