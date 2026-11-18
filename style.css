@@ -107,3 +107,39 @@ main{max-width:760px;margin:10px auto;padding:0 12px}
 .tstat-pct { min-width:44px; text-align:right; font-weight:700; font-variant-numeric:tabular-nums; }
 .tstat-pct.ok { color:#4da; } .tstat-pct.mid { color:#fc5; } .tstat-pct.bad { color:#f66; }
 .tstat-go { padding:4px 10px; font-size:.85rem; }
+
+/* --- мобильная оптимизация --- */
+@media(max-width:640px){
+  header h1{font-size:1.3rem}
+  header .sub{font-size:.8rem}
+  .tabs{flex-wrap:wrap;gap:6px;margin:10px auto 4px}
+  .tab{padding:8px 11px;font-size:.82rem;flex:1 1 30%;min-width:0}
+  .controls{gap:7px;font-size:.85rem}
+  .levels{display:flex;flex-wrap:wrap;gap:8px;width:100%;justify-content:center}
+  .levels label{font-size:.8rem}
+  .ghost,#topicBtn,#accBtn{padding:8px 10px;font-size:.8rem}
+  #counter{width:100%;text-align:center;font-size:.8rem}
+  .card{padding:16px 14px}
+  .card-head{flex-wrap:wrap;gap:6px}
+  .chip{font-size:.7rem;padding:3px 8px}
+  .q{font-size:15.5px;line-height:1.55}
+  .opt{padding:13px 12px;font-size:.95rem;min-height:44px}
+  .btns{flex-wrap:wrap;gap:8px}
+  .btns .ghost{flex:1 1 45%;padding:10px 6px;font-size:.8rem}
+  .hint,.info,.solution{font-size:.88rem;line-height:1.55}
+  .ans-input{max-width:none;font-size:16px}
+  .check-btn{padding:10px 14px}
+  .fc-btns{flex-direction:column}
+  .feyn-input{font-size:16px}
+  .plan-count{font-size:1.2rem}
+  .phase-time{min-width:70px;font-size:.78rem}
+  .phase-row{font-size:.82rem;flex-wrap:wrap}
+  .tstat-row{flex-wrap:wrap}
+  .tstat-name{flex:1 1 100%}
+  .tstat-bar{flex:1}
+  .summary .big{font-size:2.4rem}
+  .cs-topic{font-size:.85rem}
+}
+@supports(-webkit-touch-callout:none){
+  input,textarea{font-size:16px!important}
+}
