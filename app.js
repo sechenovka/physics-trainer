@@ -13,6 +13,37 @@ const LS_TOPICS = 'physTrainerTopics';
 const LS_STATS = 'physTrainerStats';
 const LS_BLIND = 'physTrainerBlind';
 const LS_DEADLINE = 'physTrainerDeadline';
+const LS_ACC = 'physTrainerAccount';
+let account = localStorage.getItem(LS_ACC) || '';
+let syncTimer = null;
+function syncPush(){
+  if (!account) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    fetch('/sync/' + encodeURIComponent(account), {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ done: [...done], stats, topics: savedTopics, deadline: localStorage.getItem(LS_DEADLINE) || '' })
+    }).catch(() => {});
+  }, 800);
+}
+async function syncLogin(name){
+  account = name; localStorage.setItem(LS_ACC, name); updateAccBtn();
+  try {
+    const remote = await (await fetch('/sync/' + encodeURIComponent(name))).json();
+    if (remote.done) remote.done.forEach(id => done.add(id));
+    if (remote.stats) for (const [t, s] of Object.entries(remote.stats)) {
+      const l = stats[t] || (stats[t] = {a:0,c:0});
+      l.a = Math.max(l.a, s.a || 0); l.c = Math.max(l.c, s.c || 0);
+    }
+    if (remote.topics) savedTopics = remote.topics;
+    if (remote.deadline) localStorage.setItem(LS_DEADLINE, remote.deadline);
+  } catch(e) {}
+  saveDone(); saveStats();
+  localStorage.setItem(LS_TOPICS, JSON.stringify(savedTopics));
+  syncPush();
+  buildTopicPanel(); build();
+}
+function updateAccBtn(){ $('#accBtn').textContent = account ? '👤 ' + account : '👤 Войти'; }
 
 const LEVEL_NAMES = { 1: 'лёгкий', 2: 'средний', 3: 'сложный', 4: 'экзамен' };
 const KIND_LABEL = { def: 'Определение', form: 'Формула', p: 'Задача' };
@@ -31,10 +62,10 @@ function migrateDone(raw){return raw.map(id=>{const m=id.match(/^([tp])(\d+)_(\d
 
 // ---------- прогресс и статистика ----------
 const done = new Set(migrateDone(JSON.parse(localStorage.getItem(LS_DONE) || '[]')));
-const saveDone = () => localStorage.setItem(LS_DONE, JSON.stringify([...done]));
+const saveDone = () => { localStorage.setItem(LS_DONE, JSON.stringify([...done])); syncPush(); };
 let stats = {};
 try { stats = JSON.parse(localStorage.getItem(LS_STATS) || '{}'); } catch(e){ stats = {}; }
-const saveStats = () => localStorage.setItem(LS_STATS, JSON.stringify(stats));
+const saveStats = () => { localStorage.setItem(LS_STATS, JSON.stringify(stats)); syncPush(); };
 function recordStat(topic, ok){
   const s = stats[topic] || (stats[topic] = {a:0,c:0});
   s.a++; if (ok) s.c++; saveStats();
@@ -72,7 +103,7 @@ function buildTopicPanel(){
 }
 function onTopicChange(){
   savedTopics[mode] = currentTopics().filter(t => !selTopics().has(t));
-  localStorage.setItem(LS_TOPICS, JSON.stringify(savedTopics));
+  localStorage.setItem(LS_TOPICS, JSON.stringify(savedTopics)); syncPush();
   updateTopicBtn(); build();
 }
 function updateTopicBtn(){
@@ -308,7 +339,7 @@ function renderPlan(){
   </div>`;
   $('#dlSet').onclick = () => {
     const v = $('#dlInput').value;
-    if (v) { localStorage.setItem(LS_DEADLINE, new Date(v).toISOString()); renderPlan(); }
+    if (v) { localStorage.setItem(LS_DEADLINE, new Date(v).toISOString()); syncPush(); renderPlan(); }
   };
   app.querySelectorAll('.tstat-go').forEach(b => b.onclick = () => {
     const t = b.dataset.t;
@@ -411,6 +442,12 @@ $('#blindCb').checked = localStorage.getItem(LS_BLIND) === '1';
 $('#blindCb').onchange = () => { localStorage.setItem(LS_BLIND, $('#blindCb').checked ? '1' : '0'); };
 $('#resetBtn').onclick = () => { if (confirm('Сбросить прогресс и статистику?')) { done.clear(); saveDone(); stats = {}; saveStats(); updateCounter(); } };
 $('#cheatsheetBtn').onclick = () => $('#cheatsheet').classList.toggle('hidden');
+$('#accBtn').onclick = () => {
+  const n = prompt('Логин (одно слово — введёшь его же на телефоне, прогресс общий):', account);
+  if (n && n.trim()) syncLogin(n.trim());
+};
+updateAccBtn();
+if (account) syncLogin(account);
 
 buildTopicPanel();
 buildCheatsheet();
