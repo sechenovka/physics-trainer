@@ -67,3 +67,43 @@ main{max-width:760px;margin:10px auto;padding:0 12px}
 .bar{height:10px;background:#1a2233;border-radius:6px;overflow:hidden;max-width:400px;margin:14px auto}
 .bar>i{display:block;height:100%;background:linear-gradient(90deg,#2563eb,#22c55e)}
 @media(max-width:560px){.q{font-size:16px}.answer-row{flex-wrap:wrap}.next-btn{margin-left:0;width:100%}}
+
+/* --- слепой режим --- */
+.blind-lbl { display:flex; align-items:center; gap:6px; cursor:pointer; font-size:.9rem; color:#aab; }
+.reveal-btn { display:block; width:100%; margin:12px 0; padding:14px; border-radius:10px; border:1px dashed #58a; background:#1a2438; color:#9cf; font-size:1rem; cursor:pointer; }
+.reveal-btn:hover { background:#22304a; }
+
+/* --- карточки --- */
+.fc-answer { margin:12px 0; padding:12px 14px; border-radius:10px; background:#16202f; border-left:3px solid #4da; line-height:1.5; }
+.fc-btns { display:flex; gap:10px; }
+.fc-know, .fc-dunno { flex:1; padding:12px; border-radius:10px; border:none; font-size:1rem; cursor:pointer; }
+.fc-know { background:#1f5c3d; color:#cfe; }
+.fc-dunno { background:#5c2a2a; color:#fdc; }
+.fc-know:hover { background:#26734d; }
+.fc-dunno:hover { background:#7a3636; }
+
+/* --- фейнман --- */
+.feyn { margin-top:14px; padding-top:10px; border-top:1px dashed #334; }
+.feyn-title { font-weight:600; color:#9cf; margin-bottom:6px; }
+.feyn-input { width:100%; box-sizing:border-box; background:#101826; color:#dde; border:1px solid #334; border-radius:8px; padding:8px 10px; font-family:inherit; font-size:.95rem; resize:vertical; }
+.feyn-btn { margin-top:8px; }
+.feyn-res { margin-left:8px; font-weight:600; }
+
+/* --- план --- */
+.plan { line-height:1.55; }
+.plan-head { font-size:1.3rem; font-weight:700; margin-bottom:12px; }
+.plan-row { margin-bottom:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.plan-row input { background:#101826; color:#dde; border:1px solid #334; border-radius:8px; padding:8px 10px; font-family:inherit; }
+.plan-count { font-size:1.5rem; font-weight:800; color:#ffd166; margin:10px 0 14px; }
+.plan-sub { font-weight:700; margin:14px 0 8px; }
+.plan-phases { margin-bottom:6px; }
+.phase-row { display:flex; gap:10px; align-items:center; padding:7px 10px; border-radius:8px; background:#16202f; margin-bottom:6px; }
+.phase-time { color:#8ab; font-variant-numeric:tabular-nums; min-width:90px; }
+.phase-go { margin-left:auto; }
+.tstat-row { display:flex; gap:10px; align-items:center; padding:6px 8px; border-bottom:1px solid #1c2434; }
+.tstat-name { flex:1; }
+.tstat-bar { width:120px; height:8px; background:#101826; border-radius:4px; overflow:hidden; }
+.tstat-bar i { display:block; height:100%; background:linear-gradient(90deg,#e05,#4da); }
+.tstat-pct { min-width:44px; text-align:right; font-weight:700; font-variant-numeric:tabular-nums; }
+.tstat-pct.ok { color:#4da; } .tstat-pct.mid { color:#fc5; } .tstat-pct.bad { color:#f66; }
+.tstat-go { padding:4px 10px; font-size:.85rem; }
