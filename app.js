@@ -333,13 +333,10 @@ function renderPlan(){
       ];
       let prev = now;
       ph.innerHTML = phs.map(([frac,name,m]) => {
-        const end = now + left*frac;
-        return `<div class="phase-row"><span class="phase-time">${new Date(prev).toTimeString().slice(0,5)}–${new Date(end).toTimeString().slice(0,5)}</span><span>${name}</span>${m?`<button class="ghost phase-go" data-m="${m}">→</button>`:''}</div>`;
-        prev = end;
+        const start = prev, end = now + left*frac; prev = end;
+        return `<div class="phase-row"><span class="phase-time">${new Date(start).toTimeString().slice(0,5)}–${new Date(end).toTimeString().slice(0,5)}</span><span>${name}</span>${m?`<button class="ghost phase-go" data-m="${m}">→</button>`:''}</div>`;
       }).join('');
       ph.querySelectorAll('.phase-go').forEach(b => b.onclick = () => switchMode(b.dataset.m));
-      // fix prev leak (rendered once per tick anyway)
-      ph.dataset.done = '1';
     }
   };
   if (planTimer) clearInterval(planTimer);
