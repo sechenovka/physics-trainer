@@ -114,7 +114,7 @@ function updateTopicBtn(){
 // ---------- рендер ----------
 function updateCounter(){
   const c = $('#counter');
-  if (mode === 'exam') c.textContent = examStats ? `Вопрос ${Math.min(idx+1,deck.length)} из ${deck.length} · верно: ${examStats.correct}` : '';
+  if (mode === 'exam' || mode === 'retake') c.textContent = examStats ? `Вопрос ${Math.min(idx+1,deck.length)} из ${deck.length} · верно: ${examStats.correct}` : '';
   else if (mode === 'srs' || mode === 'cards') c.textContent = `Осталось: ${queue.length} · выучено: ${learnedCount}`;
   else { const s = deck.filter(d=>done.has(d.id)).length; c.textContent = `Вопрос ${Math.min(idx+1,deck.length)} из ${deck.length} · решено: ${s}`; }
 }
@@ -164,7 +164,7 @@ function renderCard(d){
   const node = cardTpl.content.cloneNode(true);
   const card = node.querySelector('.card');
   card.querySelector('.topic').textContent = d.item.topic;
-  card.querySelector('.kind').textContent = KIND_LABEL[d.kind] + ' · ' + LEVEL_NAMES[d.level];
+  card.querySelector('.kind').textContent = d.retake ? (d.type === 't' ? 'Задание · экзамен' : 'Задача · экзамен') : KIND_LABEL[d.kind] + ' · ' + LEVEL_NAMES[d.level];
   card.querySelector('.q').innerHTML = d.item.q;
 
   const hintBox = card.querySelector('.hint');
@@ -291,12 +291,14 @@ function renderSummary(){
       <button class="next-btn" style="margin:0" onclick="restart()">Ещё круг</button></div>`;
     return;
   }
-  if (mode === 'exam' && examStats) {
+  if ((mode === 'exam' || mode === 'retake') && examStats) {
     const total = deck.length, pct = Math.round(examStats.correct / total * 100);
-    const grade = pct >= 90 ? 'Отлично, добор сдан!' : pct >= 70 ? 'Неплохо, но есть пробелы' : pct >= 50 ? 'Средне — повтори слабые темы' : 'К добору не готов — жми ещё раз';
-    app.innerHTML = `<div class="card summary"><div>Добор завершён</div><div class="big">${examStats.correct} / ${total}</div>
+    const grade = mode === 'retake'
+      ? (pct === 100 ? 'Идеально — так и сдавай' : pct >= 50 ? 'Есть шансы — добей красные темы' : 'Провал — гони Повторение по этим темам')
+      : (pct >= 90 ? 'Отлично, добор сдан!' : pct >= 70 ? 'Неплохо, но есть пробелы' : pct >= 50 ? 'Средне — повтори слабые темы' : 'К добору не готов — жми ещё раз');
+    app.innerHTML = `<div class="card summary"><div>${mode === 'retake' ? 'Вариант пересдачи завершён' : 'Добор завершён'}</div><div class="big">${examStats.correct} / ${total}</div>
       <div class="bar"><i style="width:${pct}%"></i></div><div class="grade">${grade}</div>
-      <button class="next-btn" style="margin:0" onclick="restart()">Новый добор</button></div>`;
+      <button class="next-btn" style="margin:0" onclick="restart()">${mode === 'retake' ? 'Новый вариант' : 'Новый добор'}</button></div>`;
   } else {
     app.innerHTML = `<div class="card summary"><div class="big">✓</div><div class="grade">Колода пройдена.</div>
       <button class="next-btn" style="margin:0" onclick="restart()">Заново</button></div>`;
@@ -393,6 +395,14 @@ function build(){
   streak.clear(); learnedCount = 0; lastGrade = null;
   if (mode === 'plan') { renderPlan(); return; }
   if (mode === 'exam') { deck = buildExamDeck(L,T); examStats = {done:0,correct:0,answered:new Set()}; }
+  else if (mode === 'retake') {
+    const retTopics = [...new Set(THEORY_RET.map(x=>x.topic))].filter(t=>!T.size||T.has(t));
+    const pool = retTopics.length >= 2 ? retTopics : [...new Set(THEORY_RET.map(x=>x.topic))];
+    const tb = shuffle([...pool]).slice(0,2).map(t=>shuffle(THEORY_RET.filter(x=>x.topic===t))[0]);
+    const pr = shuffle([...PRACTICE_RET]).slice(0,2);
+    deck = [...tb,...pr].map((item,i)=>({type:item.options?'t':'p',item,level:4,kind:item.options?'def':'p',id:'r'+i,retake:true}));
+    examStats = {done:0,correct:0,answered:new Set()};
+  }
   else {
     let kind = null;
     if (mode === 'defs') kind = 'def';
