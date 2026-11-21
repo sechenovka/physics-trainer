@@ -20,7 +20,7 @@ function syncPush(){
   if (!account) return;
   clearTimeout(syncTimer);
   syncTimer = setTimeout(() => {
-    fetch('/sync/' + encodeURIComponent(account), {
+    fetch('sync/' + encodeURIComponent(account), {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ done: [...done], stats, topics: savedTopics, deadline: localStorage.getItem(LS_DEADLINE) || '' })
     }).catch(() => {});
@@ -29,7 +29,7 @@ function syncPush(){
 async function syncLogin(name){
   account = name; localStorage.setItem(LS_ACC, name); updateAccBtn();
   try {
-    const remote = await (await fetch('/sync/' + encodeURIComponent(name))).json();
+    const remote = await (await fetch('sync/' + encodeURIComponent(name))).json();
     if (remote.done) remote.done.forEach(id => done.add(id));
     if (remote.stats) for (const [t, s] of Object.entries(remote.stats)) {
       const l = stats[t] || (stats[t] = {a:0,c:0});
